@@ -25,8 +25,8 @@ with product_state as (
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
          or case
-              when coalesce(addon_group ->> 'min_options', '') ~ '^\d+$'
-                then (addon_group ->> 'min_options')::integer
+              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+                then btrim(addon_group ->> 'min_options')::numeric
               else 0
             end > 0
     ) as requires_options
@@ -58,8 +58,8 @@ with product_state as (
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
          or case
-              when coalesce(addon_group ->> 'min_options', '') ~ '^\d+$'
-                then (addon_group ->> 'min_options')::integer
+              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+                then btrim(addon_group ->> 'min_options')::numeric
               else 0
             end > 0
     ) as requires_options
