@@ -14,8 +14,12 @@ where cr.product_id = p.id
   and exists (
     select 1
       from jsonb_array_elements(coalesce(p.addons, '[]'::jsonb)) addon_group
-     where coalesce((addon_group ->> 'required')::boolean, false)
-        or coalesce(nullif(addon_group ->> 'min_options', '')::integer, 0) > 0
+     where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
+        or case
+             when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+               then btrim(addon_group ->> 'min_options')::numeric
+             else 0
+           end > 0
   );
 
 drop trigger if exists customer_rewards_guard_free_product_required_addons on public.customer_rewards;
