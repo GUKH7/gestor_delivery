@@ -15,7 +15,11 @@ const menuPage = fs.readFileSync(
   "utf8",
 );
 
-test("final reconciliation serializes all free-product dependency tables", () => {
+test("final reconciliation serializes all free-product dependency tables inside explicit transactions", () => {
+  for (const migration of [finalMigration, reconciliationMigration]) {
+    assert.match(migration, /\bbegin\s*;/i);
+    assert.match(migration, /\bcommit\s*;/i);
+  }
   assert.match(finalMigration, /lock table public\.products,[\s\S]*public\.promotion_prizes,[\s\S]*public\.customer_rewards,[\s\S]*public\.promotion_campaigns[\s\S]*share row exclusive mode/i);
   assert.match(reconciliationMigration, /lock table public\.products,[\s\S]*share row exclusive mode/i);
 });
