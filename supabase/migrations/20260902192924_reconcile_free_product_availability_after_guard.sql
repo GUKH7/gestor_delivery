@@ -2,6 +2,8 @@
 -- This migration is intentionally idempotent. Production already received this migration version;
 -- keeping it in the repository prevents migration drift and makes fresh environments reproducible.
 
+begin;
+
 lock table public.products,
   public.promotion_prizes,
   public.customer_rewards,
@@ -83,3 +85,5 @@ update public.promotion_prizes pp
 set active = false,
     updated_at = now()
 where pp.id in (select prize_id from incompatible);
+
+commit;
