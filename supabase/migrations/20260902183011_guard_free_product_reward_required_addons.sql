@@ -28,8 +28,12 @@ begin
       and exists (
         select 1
           from jsonb_array_elements(coalesce(v_addons, '[]'::jsonb)) addon_group
-         where coalesce((addon_group ->> 'required')::boolean, false)
-            or coalesce(nullif(addon_group ->> 'min_options', '')::integer, 0) > 0
+         where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
+            or case
+                 when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+                   then btrim(addon_group ->> 'min_options')::numeric
+                 else 0
+               end > 0
       ) then
       raise exception using errcode = '23514', message = 'Free product prize cannot reference a product with required add-ons';
     end if;
@@ -59,8 +63,12 @@ begin
     and exists (
       select 1
         from jsonb_array_elements(coalesce(new.addons, '[]'::jsonb)) addon_group
-       where coalesce((addon_group ->> 'required')::boolean, false)
-          or coalesce(nullif(addon_group ->> 'min_options', '')::integer, 0) > 0
+       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
+          or case
+               when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+                 then btrim(addon_group ->> 'min_options')::numeric
+               else 0
+             end > 0
     )
     and exists (
       select 1
