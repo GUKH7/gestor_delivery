@@ -20,8 +20,12 @@ begin
     and exists (
       select 1
       from jsonb_array_elements(coalesce(new.addons, '[]'::jsonb)) addon_group
-      where coalesce((addon_group ->> 'required')::boolean, false)
-         or coalesce(nullif(addon_group ->> 'min_options', '')::integer, 0) > 0
+      where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
+         or case
+              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
+                then btrim(addon_group ->> 'min_options')::numeric
+              else 0
+            end > 0
     );
 
   if coalesce(new.is_active, false) = false or v_requires_options then
