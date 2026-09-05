@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 const finalMigration = fs.readFileSync(
-  new URL("../supabase/migrations/20260905205000_finalize_free_product_reward_guards.sql", import.meta.url),
+  new URL("../supabase/migrations/20260905205703_finalize_free_product_reward_guards.sql", import.meta.url),
   "utf8",
 );
 const reconciliationMigration = fs.readFileSync(
