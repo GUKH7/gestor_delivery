@@ -1,6 +1,8 @@
 -- Final, lock-safe reconciliation for automatic free-product rewards.
 -- A product may back a free-product prize/reward only while active and while it requires no mandatory add-on choice.
 
+begin;
+
 lock table public.products,
   public.promotion_prizes,
   public.customer_rewards,
@@ -280,3 +282,5 @@ update public.promotion_prizes pp
 set active = false,
     updated_at = now()
 where pp.id in (select prize_id from incompatible);
+
+commit;
