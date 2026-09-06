@@ -215,11 +215,48 @@ export default function AdminDashboard() {
   };
 
   const toggleProductStatus = async (product: any) => {
-    const newStatus = !product.is_active;
+    const previousStatus = Boolean(product.is_active);
+    const newStatus = !previousStatus;
     setProducts((current) =>
       current.map((item) => (item.id === product.id ? { ...item, is_active: newStatus } : item)),
     );
-    await supabase.from("products").update({ is_active: newStatus }).eq("id", product.id);
+
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: newStatus })
+        .eq("id", product.id);
+
+      if (error) throw error;
+
+      showToast({
+        title: newStatus ? "Produto reativado" : "Produto pausado",
+        description: newStatus
+          ? `${product.name} voltou a aparecer na vitrine.`
+          : `${product.name} foi ocultado da vitrine.`,
+        tone: "success",
+      });
+    } catch (error) {
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id ? { ...item, is_active: previousStatus } : item,
+        ),
+      );
+
+      const rawMessage =
+        typeof (error as { message?: unknown } | null)?.message === "string"
+          ? (error as { message: string }).message
+          : "Tente novamente em instantes.";
+      const blockedByReward = rawMessage.toLowerCase().includes("free-product reward");
+
+      showToast({
+        title: newStatus ? "Não foi possível reativar o produto" : "Não foi possível pausar o produto",
+        description: blockedByReward
+          ? "Este produto está vinculado a um prêmio ativo ou a uma recompensa já entregue. Revise a Roleta da Sorte antes de pausá-lo."
+          : rawMessage,
+        tone: "error",
+      });
+    }
   };
 
   const toggleCategoryStatus = async (category: any) => {

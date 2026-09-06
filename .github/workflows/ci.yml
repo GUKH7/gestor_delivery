@@ -89,7 +89,9 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pin the latest stable release used by this CI instead of resolving
+          # `latest` through GitHub's API on every run, which can hit rate limits.
+          version: 2.116.0
 
       - name: Initialize local Supabase config
         run: |
@@ -140,7 +142,11 @@ jobs:
 
       - name: Stop isolated Supabase
         if: always()
-        run: supabase stop --no-backup
+        shell: bash
+        run: |
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup
+          fi
 
   release-gate:
     name: Release gate
