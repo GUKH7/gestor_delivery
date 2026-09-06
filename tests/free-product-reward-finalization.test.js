@@ -11,10 +11,10 @@ const finalMigration = readMigration(
 const reconciliationMigration = readMigration(
   "20260902192924_reconcile_free_product_availability_after_guard.sql",
 );
-const activeDecimalParserMigration = readMigration(
-  "20260906095553_parse_decimal_free_product_addon_minimums.sql",
+const activeParserMigration = readMigration(
+  "20260906101000_make_free_product_addon_parser_overflow_safe.sql",
 );
-const decimalParserMigrations = [
+const parserMigrations = [
   "20260902183011_guard_free_product_reward_required_addons.sql",
   "20260902183843_strengthen_free_product_reward_guards.sql",
   "20260902184658_validate_existing_free_product_rewards_and_expiry.sql",
@@ -23,6 +23,7 @@ const decimalParserMigrations = [
   "20260902192924_reconcile_free_product_availability_after_guard.sql",
   "20260905205703_finalize_free_product_reward_guards.sql",
   "20260906095553_parse_decimal_free_product_addon_minimums.sql",
+  "20260906101000_make_free_product_addon_parser_overflow_safe.sql",
 ].map(readMigration);
 const menuPage = fs.readFileSync(
   new URL("../src/app/admin/(painel)/menu/page.tsx", import.meta.url),
@@ -33,7 +34,7 @@ test("final reconciliation serializes all free-product dependency tables inside 
   for (const migration of [
     finalMigration,
     reconciliationMigration,
-    activeDecimalParserMigration,
+    activeParserMigration,
   ]) {
     assert.match(migration, /\bbegin\s*;/i);
     assert.match(migration, /\bcommit\s*;/i);
@@ -59,17 +60,17 @@ test("legacy add-on JSON is expanded only through an array-safe expression", () 
   );
 });
 
-test("legacy decimal add-on minimums never use an integer cast", () => {
-  for (const migration of decimalParserMigrations) {
+test("add-on minimum parsing is cast-free and overflow-safe across the hotfix history", () => {
+  for (const migration of parserMigrations) {
     assert.doesNotMatch(
       migration,
-      /min_options[\s\S]{0,160}::integer/i,
-      "min_options must not be cast directly to integer",
+      /min_options[\s\S]{0,220}::(?:integer|numeric)/i,
+      "min_options must never require an integer or numeric cast",
     );
     assert.match(
       migration,
-      /min_options[\s\S]{0,260}::numeric/i,
-      "min_options must be parsed as numeric after validation",
+      /split_part\(lower\(btrim\(coalesce\(addon_group ->> 'min_options', ''\)\)\), 'e', 1\) ~ '\[1-9\]'/i,
+      "positive minimum detection must inspect the mantissa text without a numeric cast",
     );
   }
 
@@ -79,9 +80,9 @@ test("legacy decimal add-on minimums never use an integer cast", () => {
     "final guard must recognize decimal numeric strings such as 1.5, 1. and .5",
   );
   assert.match(
-    activeDecimalParserMigration,
+    activeParserMigration,
     /\[eE\]\[\+\-\]\?\[0-9\]\+/,
-    "active guard must safely recognize scientific numeric strings",
+    "active guard must recognize scientific numeric syntax without converting its exponent",
   );
 });
 
