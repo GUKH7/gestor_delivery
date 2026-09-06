@@ -147,6 +147,10 @@ function prizeTypeLabel(type: string) {
   return "Prêmio";
 }
 
+function performanceSnapshotKey(prizeId: string, label: string, type: string) {
+  return JSON.stringify([prizeId, label, type]);
+}
+
 function chunk<T>(items: T[], size: number) {
   const groups: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -394,14 +398,16 @@ export default function WheelCampaignMetrics() {
       ? (usedRewards.length / awardedResults.length) * 100
       : 0;
 
-    const usedByPrize = new Map<string, number>();
+    const usedBySnapshot = new Map<string, number>();
     usedRewards.forEach((reward) => {
-      usedByPrize.set(reward.prize_id, (usedByPrize.get(reward.prize_id) || 0) + 1);
+      const snapshotKey = performanceSnapshotKey(reward.prize_id, reward.label, reward.reward_type);
+      usedBySnapshot.set(snapshotKey, (usedBySnapshot.get(snapshotKey) || 0) + 1);
     });
 
     const performance = new Map<string, PrizePerformance>();
     snapshot.results.forEach((result) => {
-      const current = performance.get(result.prize_id) || {
+      const snapshotKey = performanceSnapshotKey(result.prize_id, result.prize_label, result.prize_type);
+      const current = performance.get(snapshotKey) || {
         prizeId: result.prize_id,
         label: result.prize_label,
         type: result.prize_type,
@@ -410,12 +416,13 @@ export default function WheelCampaignMetrics() {
         conversion: 0,
       };
       current.outcomes += 1;
-      performance.set(result.prize_id, current);
+      performance.set(snapshotKey, current);
     });
 
     const prizePerformance = Array.from(performance.values())
       .map((item) => {
-        const used = usedByPrize.get(item.prizeId) || 0;
+        const snapshotKey = performanceSnapshotKey(item.prizeId, item.label, item.type);
+        const used = usedBySnapshot.get(snapshotKey) || 0;
         return {
           ...item,
           used,
@@ -640,7 +647,7 @@ export default function WheelCampaignMetrics() {
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
                   {analytics.prizePerformance.map((item) => (
-                    <tr key={item.prizeId} className="text-sm">
+                    <tr key={performanceSnapshotKey(item.prizeId, item.label, item.type)} className="text-sm">
                       <td className="px-5 py-4">
                         <p className="font-black text-gray-900">{item.label}</p>
                         <p className="mt-1 text-xs text-gray-500">{prizeTypeLabel(item.type)}</p>
