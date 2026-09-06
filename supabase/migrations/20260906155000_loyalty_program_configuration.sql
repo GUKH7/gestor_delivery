@@ -57,5 +57,4 @@ with check (
     where rm.restaurant_id = loyalty_programs.restaurant_id
       and rm.user_id = (select auth.uid())
   )
-  and (created_by is null or created_by = (select auth.uid()))
 );
