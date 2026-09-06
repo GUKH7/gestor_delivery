@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gift, LayoutGrid, Ticket } from "lucide-react";
+import { Award, Gift, LayoutGrid, Ticket } from "lucide-react";
 import { AdminPageShell } from "@/components/ui/admin-primitives";
 
 const PROMOTION_TABS = [
@@ -20,6 +20,11 @@ const PROMOTION_TABS = [
     label: "Roleta da Sorte",
     href: "/admin/promotions/wheel",
     icon: Gift,
+  },
+  {
+    label: "Fidelidade",
+    href: "/admin/promotions/loyalty",
+    icon: Award,
   },
 ];
 
