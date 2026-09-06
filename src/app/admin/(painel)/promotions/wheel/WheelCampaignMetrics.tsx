@@ -2,7 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -73,7 +73,7 @@ type OrderRow = {
   created_at: string;
 };
 
-type MetricsSnapshot = {
+type Snapshot = {
   campaign: CampaignRow;
   spins: SpinRow[];
   results: ResultRow[];
@@ -81,7 +81,7 @@ type MetricsSnapshot = {
   orders: OrderRow[];
 };
 
-type MetricCard = {
+type Metric = {
   label: string;
   value: string;
   helper: string;
@@ -113,13 +113,13 @@ function formatPercent(value: number) {
 
 function formatDate(value: string | null) {
   if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(parsed);
+  }).format(date);
 }
 
 function statusLabel(status: CampaignStatus) {
@@ -156,7 +156,7 @@ function chunk<T>(items: T[], size: number) {
 }
 
 async function fetchPaginated<T>(buildQuery: (from: number, to: number) => any): Promise<T[]> {
-  const allRows: T[] = [];
+  const rows: T[] = [];
   let from = 0;
 
   while (true) {
@@ -164,18 +164,18 @@ async function fetchPaginated<T>(buildQuery: (from: number, to: number) => any):
     if (error) throw error;
 
     const page = (data || []) as T[];
-    allRows.push(...page);
+    rows.push(...page);
     if (page.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
   }
 
-  return allRows;
+  return rows;
 }
 
-function MetricTile({ metric }: { metric: MetricCard }) {
+function MetricTile({ metric }: { metric: Metric }) {
   const Icon = metric.icon;
   return (
-    <article className="surface-card rounded-[24px] p-4 sm:p-5">
+    <article className="surface-card rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.08em] text-gray-400">{metric.label}</p>
@@ -190,7 +190,17 @@ function MetricTile({ metric }: { metric: MetricCard }) {
   );
 }
 
-function FunnelRow({ label, value, helper, width }: { label: string; value: string; helper: string; width: number }) {
+function FunnelRow({
+  label,
+  value,
+  helper,
+  width,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  width: number;
+}) {
   return (
     <div>
       <div className="flex items-end justify-between gap-3">
@@ -210,20 +220,6 @@ function FunnelRow({ label, value, helper, width }: { label: string; value: stri
   );
 }
 
-function SectionHeader({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff2ea] text-[var(--brand)]">
-        {icon}
-      </span>
-      <div>
-        <h3 className="text-base font-black text-gray-950 sm:text-lg">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
-      </div>
-    </div>
-  );
-}
-
 export default function WheelCampaignMetrics() {
   const router = useRouter();
   const supabase = useMemo(
@@ -238,7 +234,7 @@ export default function WheelCampaignMetrics() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [snapshot, setSnapshot] = useState<MetricsSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
 
   const loadMetrics = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
@@ -353,23 +349,27 @@ export default function WheelCampaignMetrics() {
     const pendingSpins = snapshot.spins.filter((spin) => spin.status === "pending").length;
     const participants = new Set(resolvedSpins.map((spin) => spin.customer_id));
     const awardedResults = snapshot.results.filter((result) => result.prize_type !== "no_prize");
+
     const validOrders = new Map(
       snapshot.orders
         .filter((order) => order.status !== "canceled")
         .map((order) => [order.id, order] as const),
     );
+
     const usedRewards = snapshot.rewards.filter(
       (reward) =>
         reward.status === "redeemed" &&
         reward.redeemed_order_id &&
         validOrders.has(reward.redeemed_order_id),
     );
-    const repurchaseCustomers = new Set(usedRewards.map((reward) => reward.customer_id));
 
+    const repurchaseCustomers = new Set(usedRewards.map((reward) => reward.customer_id));
     const associatedOrders = Array.from(
       new Map(
         usedRewards
-          .map((reward) => reward.redeemed_order_id ? validOrders.get(reward.redeemed_order_id) : null)
+          .map((reward) =>
+            reward.redeemed_order_id ? validOrders.get(reward.redeemed_order_id) : undefined,
+          )
           .filter((order): order is OrderRow => Boolean(order))
           .map((order) => [order.id, order] as const),
       ).values(),
@@ -399,9 +399,9 @@ export default function WheelCampaignMetrics() {
       usedByPrize.set(reward.prize_id, (usedByPrize.get(reward.prize_id) || 0) + 1);
     });
 
-    const performanceMap = new Map<string, PrizePerformance>();
+    const performance = new Map<string, PrizePerformance>();
     snapshot.results.forEach((result) => {
-      const current = performanceMap.get(result.prize_id) || {
+      const current = performance.get(result.prize_id) || {
         prizeId: result.prize_id,
         label: result.prize_label,
         type: result.prize_type,
@@ -410,16 +410,18 @@ export default function WheelCampaignMetrics() {
         conversion: 0,
       };
       current.outcomes += 1;
-      performanceMap.set(result.prize_id, current);
+      performance.set(result.prize_id, current);
     });
 
-    const prizePerformance = Array.from(performanceMap.values())
+    const prizePerformance = Array.from(performance.values())
       .map((item) => {
         const used = usedByPrize.get(item.prizeId) || 0;
         return {
           ...item,
           used,
-          conversion: item.type === "no_prize" || item.outcomes === 0 ? 0 : (used / item.outcomes) * 100,
+          conversion: item.type === "no_prize" || item.outcomes === 0
+            ? 0
+            : (used / item.outcomes) * 100,
         };
       })
       .sort((a, b) => b.outcomes - a.outcomes || a.label.localeCompare(b.label, "pt-BR"));
@@ -456,7 +458,7 @@ export default function WheelCampaignMetrics() {
   if (!snapshot || !analytics) {
     return (
       <AdminPageShell className="mb-6">
-        <section className="surface-card rounded-[28px] p-5 sm:p-6">
+        <section className="surface-card rounded-3xl p-5 sm:p-6">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff2ea] text-[var(--brand)]">
               <Activity size={22} />
@@ -475,7 +477,7 @@ export default function WheelCampaignMetrics() {
   }
 
   const campaign = snapshot.campaign;
-  const metrics: MetricCard[] = [
+  const metrics: Metric[] = [
     {
       label: "Giros realizados",
       value: String(analytics.resolvedSpins),
@@ -536,7 +538,7 @@ export default function WheelCampaignMetrics() {
 
   return (
     <AdminPageShell className="mb-8 space-y-4">
-      <section className="surface-card rounded-[28px] p-5 sm:p-6">
+      <section className="surface-card rounded-3xl p-5 sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -547,7 +549,9 @@ export default function WheelCampaignMetrics() {
             </div>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-gray-950">{campaign.name}</h2>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-gray-500">
-              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {formatDate(campaign.starts_at)} até {formatDate(campaign.ends_at)}</span>
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDays size={14} /> {formatDate(campaign.starts_at)} até {formatDate(campaign.ends_at)}
+              </span>
               {campaign.max_awards ? <span>Limite: {campaign.max_awards} prêmios</span> : null}
               {campaign.budget_limit ? <span>Orçamento: {formatMoney(Number(campaign.budget_limit))}</span> : null}
             </div>
@@ -569,12 +573,19 @@ export default function WheelCampaignMetrics() {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[0.82fr_1.18fr]">
-        <section className="surface-card rounded-[28px] p-5 sm:p-6">
-          <SectionHeader
-            icon={<Activity size={19} />}
-            title="Funil da campanha"
-            description="Mostra quantos giros avançaram para premiação e, depois, para uma nova compra."
-          />
+        <section className="surface-card rounded-3xl p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff2ea] text-[var(--brand)]">
+              <Activity size={19} />
+            </span>
+            <div>
+              <h3 className="text-base font-black text-gray-950 sm:text-lg">Funil da campanha</h3>
+              <p className="mt-1 text-sm leading-6 text-gray-500">
+                Mostra quantos giros avançaram para premiação e, depois, para uma nova compra.
+              </p>
+            </div>
+          </div>
+
           <div className="mt-6 space-y-5">
             <FunnelRow
               label="Giros concluídos"
@@ -597,13 +608,19 @@ export default function WheelCampaignMetrics() {
           </div>
         </section>
 
-        <section className="surface-card overflow-hidden rounded-[28px]">
+        <section className="surface-card overflow-hidden rounded-3xl">
           <div className="p-5 sm:p-6">
-            <SectionHeader
-              icon={<Trophy size={19} />}
-              title="Desempenho por resultado"
-              description="Compare frequência de sorteio e conversão dos benefícios em novos pedidos."
-            />
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff2ea] text-[var(--brand)]">
+                <Trophy size={19} />
+              </span>
+              <div>
+                <h3 className="text-base font-black text-gray-950 sm:text-lg">Desempenho por resultado</h3>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  Compare frequência de sorteio e conversão dos benefícios em novos pedidos.
+                </p>
+              </div>
+            </div>
           </div>
 
           {analytics.prizePerformance.length === 0 ? (
@@ -629,8 +646,12 @@ export default function WheelCampaignMetrics() {
                         <p className="mt-1 text-xs text-gray-500">{prizeTypeLabel(item.type)}</p>
                       </td>
                       <td className="px-4 py-4 text-right font-bold text-gray-700">{item.outcomes}</td>
-                      <td className="px-4 py-4 text-right font-bold text-gray-700">{item.type === "no_prize" ? "—" : item.used}</td>
-                      <td className="px-5 py-4 text-right font-black text-gray-950">{item.type === "no_prize" ? "—" : formatPercent(item.conversion)}</td>
+                      <td className="px-4 py-4 text-right font-bold text-gray-700">
+                        {item.type === "no_prize" ? "—" : item.used}
+                      </td>
+                      <td className="px-5 py-4 text-right font-black text-gray-950">
+                        {item.type === "no_prize" ? "—" : formatPercent(item.conversion)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
