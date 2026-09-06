@@ -27,7 +27,7 @@ async function loginWithVerifiedPromotionIdentity(page: any) {
 
 async function postJson(page: any, path: string, body: Record<string, unknown>) {
   return page.evaluate(
-    async ({ path: requestPath, body: requestBody }) => {
+    async ({ path: requestPath, body: requestBody }: { path: string; body: Record<string, unknown> }) => {
       const response = await fetch(requestPath, {
         method: "POST",
         credentials: "same-origin",
