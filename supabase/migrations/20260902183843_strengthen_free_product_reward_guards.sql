@@ -35,11 +35,11 @@ begin
         select 1
           from jsonb_array_elements(coalesce(v_addons, '[]'::jsonb)) addon_group
          where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-            or case
-                 when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
-                   then btrim(addon_group ->> 'min_options')::numeric
-                 else 0
-               end > 0
+            or (
+              btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+              and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+              and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+            )
       ) then
       raise exception using errcode = '23514', message = 'Free product prize cannot reference a product with required add-ons';
     end if;
@@ -85,11 +85,11 @@ begin
         select 1
           from jsonb_array_elements(coalesce(v_addons, '[]'::jsonb)) addon_group
          where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-            or case
-                 when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
-                   then btrim(addon_group ->> 'min_options')::numeric
-                 else 0
-               end > 0
+            or (
+              btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+              and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+              and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+            )
       ) then
       raise exception using errcode = '23514', message = 'Available free product reward cannot reference a product with required add-ons';
     end if;
@@ -120,11 +120,11 @@ begin
       select 1
         from jsonb_array_elements(coalesce(new.addons, '[]'::jsonb)) addon_group
        where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-          or case
-               when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+]?[0-9]+([.][0-9]+)?$'
-                 then btrim(addon_group ->> 'min_options')::numeric
-               else 0
-             end > 0
+          or (
+            btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+            and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+            and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+          )
     ) then
     perform pg_advisory_xact_lock(
       hashtextextended('promotion-free-product:' || new.id::text, 0)
