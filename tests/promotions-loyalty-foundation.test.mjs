@@ -15,23 +15,23 @@ const workspace = fs.readFileSync(
   "utf8",
 );
 
-test("Promoções expõe a nova aba Fidelidade", () => {
+test("Promoções expõe a aba Fidelidade", () => {
   assert.match(tabs, /label: "Fidelidade"/);
   assert.match(tabs, /href: "\/admin\/promotions\/loyalty"/);
   assert.match(page, /LoyaltyProgramWorkspace/);
 });
 
-test("Página base comunica a jornada de fidelidade sem prometer persistência ainda", () => {
+test("Página de fidelidade mantém a jornada e passa a oferecer configuração persistida", () => {
   assert.match(workspace, /Programa de fidelidade/);
-  assert.match(workspace, /Acumular pontos/);
-  assert.match(workspace, /Trocar por recompensas/);
-  assert.match(workspace, /Voltar a comprar/);
-  assert.match(workspace, /Próxima etapa: configuração/);
+  assert.match(workspace, /Forma de acúmulo/);
+  assert.match(workspace, /Por valor gasto/);
+  assert.match(workspace, /Por pedido concluído/);
+  assert.match(workspace, /Validade dos pontos/);
+  assert.match(workspace, /Configuração persistida/);
 });
 
-test("Fundação separa carteira de fidelidade da Roleta", () => {
-  assert.match(workspace, /Carteira do cliente/);
-  assert.match(workspace, /Catálogo de recompensas/);
-  assert.match(workspace, /Métricas de fidelização/);
-  assert.match(workspace, /sem misturar o saldo de fidelidade com os giros da Roleta/);
+test("Fidelidade continua isolada da Roleta e prepara carteira própria", () => {
+  assert.match(workspace, /não mistura pontos com cupons ou giros da Roleta/);
+  assert.match(workspace, /Carteira e extrato/);
+  assert.match(workspace, /saldo e extrato auditável/i);
 });
