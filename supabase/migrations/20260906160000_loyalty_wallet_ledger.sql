@@ -141,7 +141,7 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $$;
+as $$
 begin
   raise exception using errcode = '55000', message = 'Loyalty point transactions are immutable';
 end;
