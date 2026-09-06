@@ -50,6 +50,13 @@ test("repurchase requires a participant to redeem a reward in a valid order", ()
   assert.match(metrics, /reward\.status === "redeemed"/);
 });
 
+test("prize performance preserves historical label and type snapshots", () => {
+  assert.match(metrics, /function performanceSnapshotKey\(prizeId: string, label: string, type: string\)/);
+  assert.match(metrics, /performanceSnapshotKey\(reward\.prize_id, reward\.label, reward\.reward_type\)/);
+  assert.match(metrics, /performanceSnapshotKey\(result\.prize_id, result\.prize_label, result\.prize_type\)/);
+  assert.match(metrics, /usedBySnapshot/);
+});
+
 test("metrics refresh after the wheel configuration is saved", () => {
   assert.match(metrics, /shifuh:promotion-wheel-saved/);
   assert.match(metrics, /addEventListener\(WHEEL_CAMPAIGN_SAVED_EVENT/);
