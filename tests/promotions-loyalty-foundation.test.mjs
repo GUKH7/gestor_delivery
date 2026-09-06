@@ -15,23 +15,22 @@ const workspace = fs.readFileSync(
   "utf8",
 );
 
-test("Promoções expõe a nova aba Fidelidade", () => {
+test("Promoções expõe a aba Fidelidade", () => {
   assert.match(tabs, /label: "Fidelidade"/);
   assert.match(tabs, /href: "\/admin\/promotions\/loyalty"/);
   assert.match(page, /LoyaltyProgramWorkspace/);
 });
 
-test("Página base comunica a jornada de fidelidade sem prometer persistência ainda", () => {
+test("Página de Fidelidade mantém a jornada e agora expõe configuração real", () => {
   assert.match(workspace, /Programa de fidelidade/);
-  assert.match(workspace, /Acumular pontos/);
-  assert.match(workspace, /Trocar por recompensas/);
-  assert.match(workspace, /Voltar a comprar/);
-  assert.match(workspace, /Próxima etapa: configuração/);
+  assert.match(workspace, /Forma de acúmulo/);
+  assert.match(workspace, /Por valor gasto/);
+  assert.match(workspace, /Por pedido concluído/);
+  assert.match(workspace, /Pedido mínimo para pontuar/);
+  assert.match(workspace, /Definir validade dos pontos/);
 });
 
-test("Fundação separa carteira de fidelidade da Roleta", () => {
-  assert.match(workspace, /Carteira do cliente/);
-  assert.match(workspace, /Catálogo de recompensas/);
-  assert.match(workspace, /Métricas de fidelização/);
-  assert.match(workspace, /sem misturar o saldo de fidelidade com os giros da Roleta/);
+test("Fidelidade continua separada da Roleta", () => {
+  assert.match(workspace, /Carteira separada/);
+  assert.match(workspace, /sem misturar dados com os giros da Roleta/);
 });
