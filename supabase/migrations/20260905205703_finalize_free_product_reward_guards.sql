@@ -48,11 +48,11 @@ begin
         end
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-         or case
-              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
-                then btrim(addon_group ->> 'min_options')::numeric
-              else 0
-            end > 0
+         or (
+           btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+           and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+           and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+         )
     );
 
     if v_requires_options then
@@ -105,11 +105,11 @@ begin
         end
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-         or case
-              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
-                then btrim(addon_group ->> 'min_options')::numeric
-              else 0
-            end > 0
+         or (
+           btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+           and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+           and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+         )
     );
 
     if v_requires_options then
@@ -146,11 +146,11 @@ begin
       end
     ) addon_group
     where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-       or case
-            when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
-              then btrim(addon_group ->> 'min_options')::numeric
-            else 0
-          end > 0
+       or (
+         btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+         and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+         and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+       )
   );
 
   if coalesce(new.is_active, false) = false or v_requires_options then
@@ -221,11 +221,11 @@ with product_state as (
         end
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-         or case
-              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
-                then btrim(addon_group ->> 'min_options')::numeric
-              else 0
-            end > 0
+         or (
+           btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+           and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+           and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+         )
     ) as requires_options
   from public.products p
 )
@@ -254,11 +254,11 @@ with product_state as (
         end
       ) addon_group
       where lower(coalesce(addon_group ->> 'required', 'false')) = 'true'
-         or case
-              when btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
-                then btrim(addon_group ->> 'min_options')::numeric
-              else 0
-            end > 0
+         or (
+           btrim(coalesce(addon_group ->> 'min_options', '')) ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
+           and btrim(coalesce(addon_group ->> 'min_options', '')) !~ '^-'
+           and split_part(lower(btrim(coalesce(addon_group ->> 'min_options', ''))), 'e', 1) ~ '[1-9]'
+         )
     ) as requires_options
   from public.products p
 ), incompatible as (
